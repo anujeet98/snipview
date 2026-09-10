@@ -1,9 +1,14 @@
-// Captures the current tab and shows it in a picture-in-picture window.
-// v0: mirrors the whole tab. Region cropping arrives in v1.
+// Captures the current tab, crops it to the chosen region with a canvas,
+// and shows the crop in a picture-in-picture window.
+
+import type { Region } from "./region";
 
 type Session = {
-  stream: MediaStream;
-  video: HTMLVideoElement;
+  tabStream: MediaStream;
+  source: HTMLVideoElement;
+  canvas: HTMLCanvasElement;
+  pip: HTMLVideoElement;
+  stopDrawing: () => void;
 };
 
 let session: Session | null = null;
@@ -12,13 +17,12 @@ export function isRunning(): boolean {
   return session !== null;
 }
 
-export async function startPip(streamId: string): Promise<void> {
+export async function startCroppedPip(streamId: string, region: Region): Promise<void> {
   if (session) return;
 
-  const stream = await navigator.mediaDevices.getUserMedia({
+  const tabStream = await navigator.mediaDevices.getUserMedia({
     audio: false,
     video: {
-      // Non-standard constraints Chrome uses for tab capture.
       mandatory: {
         chromeMediaSource: "tab",
         chromeMediaSourceId: streamId,
@@ -28,27 +32,31 @@ export async function startPip(streamId: string): Promise<void> {
     } as MediaTrackConstraints,
   });
 
-  const video = document.createElement("video");
-  video.srcObject = stream;
-  video.muted = true;
-  video.disablePictureInPicture = false;
-  Object.assign(video.style, {
-    position: "fixed",
-    left: "-10000px",
-    top: "0",
-    width: "1px",
-    height: "1px",
-    pointerEvents: "none",
-  });
-  document.body.appendChild(video);
+  const source = document.createElement("video");
+  source.srcObject = tabStream;
+  source.muted = true;
+  await source.play();
 
-  session = { stream, video };
-  stream.getVideoTracks()[0].addEventListener("ended", stopPip);
-  video.addEventListener("leavepictureinpicture", stopPip, { once: true });
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  const stopDrawing = runDrawLoop(source, canvas, ctx, region);
+
+  const pip = document.createElement("video");
+  pip.muted = true;
+  hideOffscreen(pip);
+  pip.srcObject = canvas.captureStream(30);
+  document.body.appendChild(pip);
+  await pip.play();
+  if (pip.readyState < HTMLMediaElement.HAVE_METADATA) {
+    await new Promise((resolve) => pip.addEventListener("loadedmetadata", resolve, { once: true }));
+  }
+
+  session = { tabStream, source, canvas, pip, stopDrawing };
+  tabStream.getVideoTracks()[0].addEventListener("ended", stopPip);
+  pip.addEventListener("leavepictureinpicture", stopPip, { once: true });
 
   try {
-    await video.play();
-    await video.requestPictureInPicture();
+    await pip.requestPictureInPicture();
   } catch (error) {
     stopPip();
     throw error;
@@ -57,12 +65,66 @@ export async function startPip(streamId: string): Promise<void> {
 
 export function stopPip(): void {
   if (!session) return;
-  const { stream, video } = session;
+  const { tabStream, source, pip, stopDrawing } = session;
   session = null;
 
-  if (document.pictureInPictureElement === video) {
+  stopDrawing();
+  if (document.pictureInPictureElement === pip) {
     void document.exitPictureInPicture().catch(() => {});
   }
-  stream.getTracks().forEach((track) => track.stop());
-  video.remove();
+  tabStream.getTracks().forEach((track) => track.stop());
+  source.remove();
+  pip.remove();
+}
+
+// Copies the region out of each source frame into the canvas. Driven by
+// requestVideoFrameCallback so it keeps updating while this tab is in the
+// background (where requestAnimationFrame would be throttled to ~1fps).
+function runDrawLoop(
+  source: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+  region: Region,
+): () => void {
+  let stopped = false;
+
+  const draw = () => {
+    const vw = source.videoWidth;
+    const vh = source.videoHeight;
+    if (vw && vh) {
+      const sw = Math.max(2, Math.round(region.width * vw));
+      const sh = Math.max(2, Math.round(region.height * vh));
+      if (canvas.width !== sw || canvas.height !== sh) {
+        canvas.width = sw;
+        canvas.height = sh;
+      }
+      ctx.drawImage(source, region.left * vw, region.top * vh, sw, sh, 0, 0, sw, sh);
+    }
+    schedule();
+  };
+
+  const rvfc = source.requestVideoFrameCallback?.bind(source);
+  const schedule = rvfc
+    ? () => {
+        if (!stopped) rvfc(draw);
+      }
+    : () => {
+        if (!stopped) requestAnimationFrame(draw);
+      };
+
+  schedule();
+  return () => {
+    stopped = true;
+  };
+}
+
+function hideOffscreen(el: HTMLElement): void {
+  Object.assign(el.style, {
+    position: "fixed",
+    left: "-10000px",
+    top: "0",
+    width: "1px",
+    height: "1px",
+    pointerEvents: "none",
+  });
 }

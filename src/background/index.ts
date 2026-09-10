@@ -1,4 +1,8 @@
-// Toolbar click -> mint a tab-capture stream id -> ask the content script to toggle PiP.
+// Toolbar click opens the selection overlay in the tab. The content script
+// asks back for a tab-capture stream id once the region is chosen, so the id
+// is fresh when it's used (these ids expire within seconds).
+
+import type { GetStreamId, StreamIdResult } from "../messages";
 
 const RESTRICTED = /^(chrome|edge|about|chrome-extension|devtools):/i;
 
@@ -10,37 +14,31 @@ chrome.action.onClicked.addListener(async (tab) => {
     return;
   }
 
-  let streamId: string;
   try {
-    streamId = await getMediaStreamId(tab.id);
-  } catch (error) {
-    warn(tab.id, `SnipView: capture failed — ${asMessage(error)}`);
-    return;
-  }
-
-  try {
-    // Runs in the content script's world; the toolbar click still counts as a
-    // user gesture here, which requestPictureInPicture() needs.
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: (id: string) => window.__snipviewToggle?.(id),
-      args: [streamId],
+      func: () => window.__snipviewToggle?.(),
     });
   } catch (error) {
     warn(tab.id, `SnipView: injection failed — ${asMessage(error)}`);
   }
 });
 
-// getMediaStreamId is callback-only in MV3.
-function getMediaStreamId(targetTabId: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    chrome.tabCapture.getMediaStreamId({ targetTabId }, (streamId) => {
-      const error = chrome.runtime.lastError;
-      if (error) reject(new Error(error.message));
-      else resolve(streamId);
-    });
-  });
-}
+chrome.runtime.onMessage.addListener(
+  (message: GetStreamId, sender, sendResponse: (result: StreamIdResult) => void) => {
+    if (message?.type !== "snipview:get-stream-id" || !sender.tab?.id) return;
+
+    // consumerTabId must be set, or the content script in that tab can't use the stream.
+    chrome.tabCapture.getMediaStreamId(
+      { targetTabId: sender.tab.id, consumerTabId: sender.tab.id },
+      (streamId) => {
+        const error = chrome.runtime.lastError;
+        sendResponse(error ? { error: error.message } : { streamId });
+      },
+    );
+    return true; // keep the message channel open for the async response
+  },
+);
 
 function warn(tabId: number, message: string): void {
   void chrome.scripting

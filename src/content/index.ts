@@ -1,21 +1,36 @@
-// Content script entry. Exposes a toggle that the background worker calls
-// (via chrome.scripting.executeScript) so the picture-in-picture request
-// keeps the user gesture from the toolbar click.
+// Content script entry. The background worker calls window.__snipviewToggle
+// (via chrome.scripting.executeScript) on the toolbar click.
 
-import { isRunning, startPip, stopPip } from "./capture";
+import { createElement } from "react";
+import { requestStreamId } from "../messages";
+import { isRunning, startCroppedPip, stopPip } from "./capture";
+import { mountOverlay, unmountOverlay } from "./overlay/mount";
+import { SelectionOverlay } from "./overlay/SelectionOverlay";
 
 declare global {
   interface Window {
-    __snipviewToggle?: (streamId: string) => void;
+    __snipviewToggle?: () => void;
   }
 }
 
-window.__snipviewToggle = (streamId: string) => {
+window.__snipviewToggle = () => {
   if (isRunning()) {
     stopPip();
     return;
   }
-  startPip(streamId).catch((error) => {
-    console.warn("[SnipView]", error?.message ?? error);
-  });
+
+  mountOverlay(
+    createElement(SelectionOverlay, {
+      onCancel: unmountOverlay,
+      onSelect: async (region) => {
+        unmountOverlay();
+        try {
+          const streamId = await requestStreamId();
+          await startCroppedPip(streamId, region);
+        } catch (error) {
+          console.warn("[SnipView]", error instanceof Error ? error.message : error);
+        }
+      },
+    }),
+  );
 };
