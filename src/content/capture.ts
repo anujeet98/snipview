@@ -47,6 +47,9 @@ export async function startCroppedPip(streamId: string, region: Region): Promise
   pip.srcObject = canvas.captureStream(30);
   document.body.appendChild(pip);
   await pip.play();
+  if (pip.readyState < HTMLMediaElement.HAVE_METADATA) {
+    await new Promise((resolve) => pip.addEventListener("loadedmetadata", resolve, { once: true }));
+  }
 
   session = { tabStream, source, canvas, pip, stopDrawing };
   tabStream.getVideoTracks()[0].addEventListener("ended", stopPip);
