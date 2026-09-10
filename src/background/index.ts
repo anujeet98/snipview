@@ -17,7 +17,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   try {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      func: () => window.__snipviewToggle?.(),
+      func: () => window.__snipviewOpen?.(),
     });
   } catch (error) {
     warn(tab.id, `SnipView: injection failed — ${asMessage(error)}`);

@@ -11,7 +11,10 @@ export function mountOverlay(node: ReactNode): void {
   if (host) return;
 
   host = document.createElement("div");
-  host.style.cssText = "all: initial; position: fixed; inset: 0; z-index: 2147483647;";
+  // pointer-events: none so the page stays usable; each overlay opts its own
+  // interactive parts back in with pointer-events: auto.
+  host.style.cssText =
+    "all: initial; position: fixed; inset: 0; z-index: 2147483647; pointer-events: none;";
   const shadow = host.attachShadow({ mode: "open" });
   const container = document.createElement("div");
   shadow.appendChild(container);

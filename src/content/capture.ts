@@ -1,9 +1,11 @@
-// Captures the current tab, crops it to the chosen region with a canvas,
-// and shows the crop in a picture-in-picture window.
+// Captures the current tab, crops it to the active region with a canvas,
+// and shows the crop in a picture-in-picture window. The region is mutable
+// so the on-page adjust frame can reshape the crop live.
 
 import type { Region } from "./region";
 
 type Session = {
+  region: Region;
   tabStream: MediaStream;
   source: HTMLVideoElement;
   canvas: HTMLCanvasElement;
@@ -15,6 +17,14 @@ let session: Session | null = null;
 
 export function isRunning(): boolean {
   return session !== null;
+}
+
+export function getRegion(): Region | null {
+  return session?.region ?? null;
+}
+
+export function setRegion(region: Region): void {
+  if (session) session.region = region;
 }
 
 export async function startCroppedPip(streamId: string, region: Region): Promise<void> {
@@ -39,7 +49,7 @@ export async function startCroppedPip(streamId: string, region: Region): Promise
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
-  const stopDrawing = runDrawLoop(source, canvas, ctx, region);
+  const stopDrawing = runDrawLoop(source, canvas, ctx, () => session?.region ?? region);
 
   const pip = document.createElement("video");
   pip.muted = true;
@@ -51,7 +61,7 @@ export async function startCroppedPip(streamId: string, region: Region): Promise
     await new Promise((resolve) => pip.addEventListener("loadedmetadata", resolve, { once: true }));
   }
 
-  session = { tabStream, source, canvas, pip, stopDrawing };
+  session = { region, tabStream, source, canvas, pip, stopDrawing };
   tabStream.getVideoTracks()[0].addEventListener("ended", stopPip);
   pip.addEventListener("leavepictureinpicture", stopPip, { once: true });
 
@@ -84,7 +94,7 @@ function runDrawLoop(
   source: HTMLVideoElement,
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
-  region: Region,
+  getRegion: () => Region,
 ): () => void {
   let stopped = false;
 
@@ -92,6 +102,7 @@ function runDrawLoop(
     const vw = source.videoWidth;
     const vh = source.videoHeight;
     if (vw && vh) {
+      const region = getRegion();
       const sw = Math.max(2, Math.round(region.width * vw));
       const sh = Math.max(2, Math.round(region.height * vh));
       if (canvas.width !== sw || canvas.height !== sh) {

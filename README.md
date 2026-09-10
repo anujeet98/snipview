@@ -5,14 +5,16 @@ so you can keep an eye on it (a crypto chart, a dashboard, a doc) while you work
 
 ## Status
 
-Incremental build. Current: **v1 — drag-to-select region crop**.
+Incremental build. Current: **v2 — adjustable crop + per-site memory**.
 
 | Step | Scope |
 |------|-------|
 | v0 | Click the toolbar icon → the active tab plays in a floating, resizable PiP window ✅ |
 | v1 | Drag to select a region → only that crop shows in PiP ✅ |
-| v2 | Adjust the crop live; remember last region per site; options popup |
+| v2 | Move/resize the crop live; remember the last region per site ✅ |
 | v3 | Multiple PiPs, keyboard shortcut, polish, Chrome Web Store listing |
+
+Remaining tasks and bugs are tracked in [GitHub Issues](https://github.com/anujeet98/snipview/issues).
 
 ## Stack
 
@@ -46,24 +48,30 @@ npm run zip        # dist/ -> snipview.zip for the Web Store
 manifest.config.ts             extension manifest (typed)
 vite.config.ts
 src/
-  background/index.ts          toolbar click -> mint tab-capture stream id -> toggle
-  content/index.ts             exposes window.__snipviewToggle; shows the overlay
-  content/region.ts            Region = crop rect as viewport fractions
-  content/capture.ts           tab stream -> canvas crop -> captureStream -> PiP
+  background/index.ts          toolbar click -> open overlay; serves stream ids
+  messages.ts                  content <-> background message contract
+  content/index.ts             flow: select -> capture -> adjust; per-site memory
+  content/region.ts            Region = crop rect as viewport fractions (+ clamp)
+  content/regionStore.ts       load/save last region per origin (chrome.storage)
+  content/capture.ts           tab stream -> canvas crop (mutable region) -> PiP
   content/overlay/mount.ts     mounts React in a shadow root
   content/overlay/SelectionOverlay.tsx   drag-to-select rectangle
+  content/overlay/AdjustFrame.tsx        move/resize the active crop
   icons/
 ```
 
 ## How it works
 
-- `chrome.tabCapture.getMediaStreamId` produces a stream id for the active tab
-- The toolbar click mounts a full-viewport overlay; you drag a rectangle
-- On mouse-up the region (stored as viewport fractions) feeds `startCroppedPip`
-- `getUserMedia({ chromeMediaSource: "tab" })` plays the tab in a hidden `<video>`
+- The toolbar click runs `window.__snipviewOpen` in the tab (via
+  `chrome.scripting.executeScript`, so the user gesture PiP needs is preserved)
+- No saved region for this origin → a full-viewport overlay to drag a rectangle.
+  A saved region → straight to capture with it.
+- The content script asks the background for a fresh `chrome.tabCapture` stream id
+  (they expire in seconds) and calls `getUserMedia({ chromeMediaSource: "tab" })`
 - A `<canvas>` copies just the region out of each frame; `canvas.captureStream(30)`
-  feeds a second `<video>` whose `requestPictureInPicture()` opens the floating window
-- The draw loop runs on `requestVideoFrameCallback` so it keeps updating while the
-  source tab is in the background
-- The background triggers everything via `chrome.scripting.executeScript` so the
-  click still counts as the user gesture PiP requires
+  feeds a hidden `<video>` whose `requestPictureInPicture()` opens the floating window
+- The draw loop reads a **mutable** region on `requestVideoFrameCallback`, so the
+  on-page adjust frame reshapes the crop live and it keeps updating while the source
+  tab is backgrounded
+- The region is stored as viewport fractions and persisted per origin in
+  `chrome.storage.local`

@@ -71,6 +71,7 @@ const overlayStyle: CSSProperties = {
   inset: 0,
   cursor: "crosshair",
   background: "transparent",
+  pointerEvents: "auto",
   fontFamily: "system-ui, sans-serif",
 };
 
