@@ -11,19 +11,52 @@ Incremental build. Current: **v0 — whole-tab PiP**.
 |------|-------|
 | v0 | Click the toolbar icon → the active tab plays in a floating, resizable PiP window |
 | v1 | Drag to select a region → only that crop shows in PiP |
-| v2 | Adjust the crop live; remember last region per site |
+| v2 | Adjust the crop live; remember last region per site; options popup |
 | v3 | Multiple PiPs, keyboard shortcut, polish, Chrome Web Store listing |
 
-## Install (unpacked, for development)
+## Stack
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. **Load unpacked** → select the `src/` folder
-4. Pin SnipView, open a tab with something worth watching, click the icon
+- **Vite 6** + **TypeScript** — build and bundling
+- **@crxjs/vite-plugin** — MV3 manifest handling, content-script bundling, dev hot-reload
+- **React 18** — reserved for the selection overlay (v1) and options UI (v2); v0 needs no UI
+
+## Develop
+
+```bash
+npm install
+npm run dev        # Vite dev server with hot-reload
+```
+
+Then load the extension once:
+
+1. Open `chrome://extensions` → enable **Developer mode**
+2. **Load unpacked** → select the `dist/` folder (created by `dev` or `build`)
+3. Edits reload automatically while `npm run dev` runs
+
+## Build
+
+```bash
+npm run build      # typecheck + production bundle into dist/
+npm run zip        # dist/ -> snipview.zip for the Web Store
+```
+
+## Layout
+
+```
+manifest.config.ts     extension manifest (typed)
+vite.config.ts
+src/
+  background/index.ts   toolbar click -> mint tab-capture stream id -> toggle PiP
+  content/index.ts      exposes window.__snipviewToggle for the background to call
+  content/capture.ts    getUserMedia(tab) -> <video> -> requestPictureInPicture()
+  icons/
+```
 
 ## How it works
 
 - `chrome.tabCapture.getMediaStreamId` produces a stream id for the active tab
-- A content script turns that into a `MediaStream` and plays it in a hidden `<video>`
-- `video.requestPictureInPicture()` pops the OS-level floating window
-- (v1+) a `<canvas>` crops the stream before it reaches the video, via `canvas.captureStream()`
+- The content script turns that into a `MediaStream` and plays it in a hidden `<video>`
+- `video.requestPictureInPicture()` opens the OS-level floating window
+- The background calls the toggle via `chrome.scripting.executeScript` so the toolbar
+  click still counts as the user gesture PiP requires
+- (v1+) a `<canvas>` will crop the stream before the video via `canvas.captureStream()`
