@@ -28,10 +28,14 @@ chrome.runtime.onMessage.addListener(
   (message: GetStreamId, sender, sendResponse: (result: StreamIdResult) => void) => {
     if (message?.type !== "snipview:get-stream-id" || !sender.tab?.id) return;
 
-    chrome.tabCapture.getMediaStreamId({ targetTabId: sender.tab.id }, (streamId) => {
-      const error = chrome.runtime.lastError;
-      sendResponse(error ? { error: error.message } : { streamId });
-    });
+    // consumerTabId must be set, or the content script in that tab can't use the stream.
+    chrome.tabCapture.getMediaStreamId(
+      { targetTabId: sender.tab.id, consumerTabId: sender.tab.id },
+      (streamId) => {
+        const error = chrome.runtime.lastError;
+        sendResponse(error ? { error: error.message } : { streamId });
+      },
+    );
     return true; // keep the message channel open for the async response
   },
 );
