@@ -10,6 +10,12 @@ export default defineManifest({
   permissions: ["tabCapture", "activeTab", "scripting", "storage"],
   background: { service_worker: "src/background/index.ts", type: "module" },
   action: { default_title: "SnipView — pop this tab into PiP" },
+  commands: {
+    "open-snipview": {
+      suggested_key: { default: "Ctrl+Shift+S", mac: "Command+Shift+S" },
+      description: "Open SnipView on the current tab",
+    },
+  },
   content_scripts: [
     {
       matches: ["<all_urls>"],

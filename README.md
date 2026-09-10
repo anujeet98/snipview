@@ -12,7 +12,7 @@ Incremental build. Current: **v2 — adjustable crop + per-site memory**.
 | v0 | Click the toolbar icon → the active tab plays in a floating, resizable PiP window ✅ |
 | v1 | Drag to select a region → only that crop shows in PiP ✅ |
 | v2 | Move/resize the crop live; remember the last region per site ✅ |
-| v3 | Multiple PiPs, keyboard shortcut, polish, Chrome Web Store listing |
+| v3 | Keyboard shortcut ✅, multiple PiPs, polish, Chrome Web Store listing |
 
 Remaining tasks and bugs are tracked in [GitHub Issues](https://github.com/anujeet98/snipview/issues).
 
@@ -34,6 +34,9 @@ Then load the extension once:
 1. Open `chrome://extensions` → enable **Developer mode**
 2. **Load unpacked** → select the `dist/` folder (created by `dev` or `build`)
 3. Edits reload automatically while `npm run dev` runs
+
+Shortcut: **Ctrl/Cmd+Shift+S** opens SnipView on the current tab (rebindable at
+`chrome://extensions/shortcuts`).
 
 ## Build
 
