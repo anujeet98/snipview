@@ -1,0 +1,37 @@
+{
+  "name": "snipview",
+  "version": "1.0.0",
+  "description": "Crop any region of a browser tab and float it in a resizable picture-in-picture window, so you can keep an eye on it (a crypto chart, a dashboard, a doc) while you work in other tabs or apps.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "zip": "cd dist && zip -r ../snipview.zip . && cd .."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anujeet98/snipview.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/anujeet98/snipview/issues"
+  },
+  "homepage": "https://github.com/anujeet98/snipview#readme",
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.7.1",
+    "@types/chrome": "^0.0.300",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.3"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
