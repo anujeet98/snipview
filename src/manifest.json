@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "SnipView",
+  "version": "0.0.1",
+  "description": "Crop a region of a tab and float it in a resizable picture-in-picture window while you work elsewhere.",
+  "permissions": ["tabCapture", "activeTab", "scripting"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "SnipView — pop this tab into PiP" },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
