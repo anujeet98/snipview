@@ -1,13 +1,21 @@
-// Toolbar click opens the selection overlay in the tab. The content script
-// asks back for a tab-capture stream id once the region is chosen, so the id
-// is fresh when it's used (these ids expire within seconds).
+// Opens SnipView on the active tab — from the toolbar click or the keyboard
+// shortcut. The content script asks back for a tab-capture stream id once the
+// region is chosen, so the id is fresh when it's used (they expire in seconds).
 
 import type { GetStreamId, StreamIdResult } from "../messages";
 
 const RESTRICTED = /^(chrome|edge|about|chrome-extension|devtools):/i;
 
-chrome.action.onClicked.addListener(async (tab) => {
-  if (!tab?.id) return;
+chrome.action.onClicked.addListener((tab) => openInTab(tab));
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "open-snipview") return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab) openInTab(tab);
+});
+
+async function openInTab(tab: chrome.tabs.Tab): Promise<void> {
+  if (!tab.id) return;
 
   if (RESTRICTED.test(tab.url ?? "")) {
     warn(tab.id, "SnipView can't capture this page.");
@@ -22,7 +30,7 @@ chrome.action.onClicked.addListener(async (tab) => {
   } catch (error) {
     warn(tab.id, `SnipView: injection failed — ${asMessage(error)}`);
   }
-});
+}
 
 chrome.runtime.onMessage.addListener(
   (message: GetStreamId, sender, sendResponse: (result: StreamIdResult) => void) => {
