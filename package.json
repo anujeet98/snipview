@@ -1,6 +1,6 @@
 {
   "name": "snipview",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Crop any region of a browser tab and float it in a resizable picture-in-picture window, so you can keep an eye on it (a crypto chart, a dashboard, a doc) while you work in other tabs or apps.",
   "main": "index.js",
   "scripts": {

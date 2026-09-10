@@ -7,7 +7,7 @@ export default defineManifest({
   version: pkg.version,
   description:
     "Crop a region of a tab and float it in a resizable picture-in-picture window while you work elsewhere.",
-  permissions: ["tabCapture", "activeTab", "scripting"],
+  permissions: ["tabCapture", "activeTab", "scripting", "storage"],
   background: { service_worker: "src/background/index.ts", type: "module" },
   action: { default_title: "SnipView — pop this tab into PiP" },
   content_scripts: [
