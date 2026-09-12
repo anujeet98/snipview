@@ -9,7 +9,10 @@ export default defineManifest({
     "Crop a region of a tab and float it in a resizable picture-in-picture window while you work elsewhere.",
   permissions: ["tabCapture", "activeTab", "scripting", "storage"],
   background: { service_worker: "src/background/index.ts", type: "module" },
-  action: { default_title: "SnipView — pop this tab into PiP" },
+  action: {
+    default_title: "SnipView — pop this tab into PiP",
+    default_popup: "src/popup/index.html",
+  },
   commands: {
     "open-snipview": {
       suggested_key: { default: "Ctrl+Shift+S", mac: "Command+Shift+S" },
