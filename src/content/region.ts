@@ -7,6 +7,8 @@ export type Region = {
   height: number;
 };
 
+export const FULL_TAB_REGION: Region = { left: 0, top: 0, width: 1, height: 1 };
+
 const MIN_FRACTION = 0.02;
 
 // Keeps a region inside the viewport and above a minimum size.

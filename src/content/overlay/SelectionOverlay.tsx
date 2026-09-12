@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import type { Region } from "../region";
+import { FULL_TAB_REGION, type Region } from "../region";
 
 type Props = {
   onSelect: (region: Region) => void;
@@ -52,7 +52,19 @@ export function SelectionOverlay({ onSelect, onCancel }: Props) {
       onMouseUp={finish}
     >
       {box && <div style={selectionStyle(box)} />}
-      {!start && <p style={hintStyle}>Drag to pick a region · Esc to cancel</p>}
+      {!start && (
+        <div style={hintBarStyle}>
+          <p style={hintTextStyle}>Drag to pick a region · Esc to cancel</p>
+          <button
+            style={wholeTabButtonStyle}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseUp={(e) => e.stopPropagation()}
+            onClick={() => onSelect(FULL_TAB_REGION)}
+          >
+            Whole tab
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -87,15 +99,33 @@ function selectionStyle(box: Box): CSSProperties {
   };
 }
 
-const hintStyle: CSSProperties = {
+const hintBarStyle: CSSProperties = {
   position: "fixed",
   left: "50%",
   top: 24,
   transform: "translateX(-50%)",
-  margin: 0,
-  padding: "6px 14px",
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "6px 8px 6px 14px",
   borderRadius: 8,
   background: "rgba(20, 22, 34, 0.9)",
+  pointerEvents: "auto",
+};
+
+const hintTextStyle: CSSProperties = {
+  margin: 0,
   color: "#e8e8ef",
   fontSize: 13,
+};
+
+const wholeTabButtonStyle: CSSProperties = {
+  border: "1px solid #50c88c",
+  background: "transparent",
+  color: "#50c88c",
+  fontSize: 12,
+  fontWeight: 600,
+  borderRadius: 6,
+  padding: "4px 10px",
+  cursor: "pointer",
 };
