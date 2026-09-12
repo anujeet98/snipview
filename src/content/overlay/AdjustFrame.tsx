@@ -162,7 +162,9 @@ function toolbarStyle(box: Box): CSSProperties {
     gap: 6,
     padding: 4,
     borderRadius: 8,
-    background: "rgba(20, 22, 34, 0.92)",
+    background: "rgba(20, 22, 34, 0.98)",
+    border: `1px solid ${ACCENT}`,
+    boxShadow: "0 2px 10px rgba(0, 0, 0, 0.5)",
     pointerEvents: "auto",
     fontFamily: "system-ui, sans-serif",
   };
@@ -171,8 +173,9 @@ function toolbarStyle(box: Box): CSSProperties {
 const buttonStyle: CSSProperties = {
   border: "none",
   background: "transparent",
-  color: "#e8e8ef",
+  color: "#f5f5fa",
   fontSize: 12,
+  fontWeight: 600,
   padding: "4px 8px",
   cursor: "pointer",
 };
