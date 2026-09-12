@@ -56,7 +56,7 @@ src/
   content/index.ts             flow: select -> capture -> adjust; per-site memory
   content/region.ts            Region = crop rect as viewport fractions (+ clamp)
   content/regionStore.ts       load/save last region per origin (chrome.storage)
-  content/capture.ts           tab stream -> canvas crop (mutable region) -> PiP
+  content/capture.ts           tab stream -> Region Capture (canvas fallback) -> PiP
   content/overlay/mount.ts     mounts React in a shadow root
   content/overlay/SelectionOverlay.tsx   drag-to-select rectangle
   content/overlay/AdjustFrame.tsx        move/resize the active crop
@@ -71,10 +71,14 @@ src/
   A saved region → straight to capture with it.
 - The content script asks the background for a fresh `chrome.tabCapture` stream id
   (they expire in seconds) and calls `getUserMedia({ chromeMediaSource: "tab" })`
-- A `<canvas>` copies just the region out of each frame; `canvas.captureStream(30)`
-  feeds a hidden `<video>` whose `requestPictureInPicture()` opens the floating window
-- The draw loop reads a **mutable** region on `requestVideoFrameCallback`, so the
-  on-page adjust frame reshapes the crop live and it keeps updating while the source
-  tab is backgrounded
+- The crop is anchored to an invisible `<div>` placed in **document coordinates**
+  (viewport fraction + scroll), so it follows the page as it scrolls
+- **Region Capture** (`CropTarget.fromElement` + `track.cropTo`) crops the track to
+  that div in the compositor — no per-frame work — and feeds a hidden `<video>` whose
+  `requestPictureInPicture()` opens the floating window
+- Where Region Capture isn't available, a `<canvas>` copies the div's current rect
+  out of each frame on `requestVideoFrameCallback` instead
+- Moving/resizing the adjust frame repositions the anchor div, so the crop updates
+  live; it keeps updating while the source tab is backgrounded
 - The region is stored as viewport fractions and persisted per origin in
   `chrome.storage.local`
