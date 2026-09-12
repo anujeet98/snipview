@@ -18,9 +18,6 @@ type Session = {
 
 let session: Session | null = null;
 
-const regionCaptureSupported =
-  typeof CropTarget !== "undefined" && typeof CropTarget.fromElement === "function";
-
 export function isRunning(): boolean {
   return session !== null;
 }
@@ -50,6 +47,13 @@ export async function startCroppedPip(streamId: string, region: Region): Promise
     } as MediaTrackConstraints,
   });
   const track = tabStream.getVideoTracks()[0];
+  // cropTo is only implemented on getDisplayMedia() tracks, not on tracks
+  // from chrome.tabCapture like this one — check the track itself rather
+  // than assuming from CropTarget's presence, which cropTo() would throw on.
+  const regionCaptureSupported =
+    typeof CropTarget !== "undefined" &&
+    typeof CropTarget.fromElement === "function" &&
+    typeof track.cropTo === "function";
 
   const anchor = document.createElement("div");
   // Rendered (opacity, not visibility/display) so Region Capture can track it.
@@ -104,6 +108,7 @@ async function cropWithRegionCapture(
   pip: HTMLVideoElement,
 ): Promise<() => void> {
   const target = await CropTarget.fromElement(anchor);
+  // Caller has already verified track.cropTo exists (see regionCaptureSupported).
   await track.cropTo!(target);
   pip.srcObject = new MediaStream([track]);
   return () => {};
