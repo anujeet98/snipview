@@ -8,7 +8,9 @@ let host: HTMLElement | null = null;
 let root: Root | null = null;
 
 export function mountOverlay(node: ReactNode): void {
-  if (host) return;
+  // Replace whatever's mounted rather than no-op — callers use this to swap
+  // between the selection overlay and the adjust frame (e.g. "New region").
+  unmountOverlay();
 
   host = document.createElement("div");
   // pointer-events: none so the page stays usable; each overlay opts its own
