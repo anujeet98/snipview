@@ -5,14 +5,14 @@ so you can keep an eye on it (a crypto chart, a dashboard, a doc) while you work
 
 ## Status
 
-Incremental build. Current: **v2 — adjustable crop + per-site memory**.
+Incremental build. Current: **v3 — status popup, recapture, Chrome Web Store listing in progress**.
 
 | Step | Scope |
 |------|-------|
 | v0 | Click the toolbar icon → the active tab plays in a floating, resizable PiP window ✅ |
 | v1 | Drag to select a region → only that crop shows in PiP ✅ |
-| v2 | Move/resize the crop live; remember the last region per site ✅ |
-| v3 | Keyboard shortcut ✅, multiple PiPs, polish, Chrome Web Store listing |
+| v2 | Move/resize the crop live ✅ |
+| v3 | Keyboard shortcut ✅, status popup + recapture + FPS setting ✅, Chrome Web Store listing, multiple PiPs, polish |
 
 Remaining tasks and bugs are tracked in [GitHub Issues](https://github.com/anujeet98/snipview/issues).
 
@@ -20,7 +20,7 @@ Remaining tasks and bugs are tracked in [GitHub Issues](https://github.com/anuje
 
 - **Vite 6** + **TypeScript** — build and bundling
 - **@crxjs/vite-plugin** — MV3 manifest handling, content-script bundling, dev hot-reload
-- **React 18** — reserved for the selection overlay (v1) and options UI (v2); v0 needs no UI
+- **React 18** — the selection overlay, adjust frame, and toolbar popup
 
 ## Develop
 
@@ -51,30 +51,35 @@ npm run zip        # dist/ -> snipview.zip for the Web Store
 manifest.config.ts             extension manifest (typed)
 vite.config.ts
 src/
-  background/index.ts          toolbar click -> open overlay; serves stream ids
-  messages.ts                  content <-> background message contract
-  content/index.ts             flow: select -> capture -> adjust; per-site memory
+  background/index.ts          keyboard shortcut -> inject open() into the tab; serves stream ids
+  messages.ts                  content/popup <-> background/content message contract
+  settings.ts                  global settings (capture FPS) in chrome.storage
+  restricted.ts                pages SnipView can't run on (chrome://, etc.)
+  content/index.ts             flow: select -> capture -> adjust; status + reselect messages
   content/region.ts            Region = crop rect as viewport fractions (+ clamp)
-  content/regionStore.ts       load/save last region per origin (chrome.storage)
   content/capture.ts           tab stream -> canvas crop (mutable region) -> PiP
   content/overlay/mount.ts     mounts React in a shadow root
-  content/overlay/SelectionOverlay.tsx   drag-to-select rectangle
+  content/overlay/SelectionOverlay.tsx   drag-to-select rectangle (or "whole tab")
   content/overlay/AdjustFrame.tsx        move/resize the active crop
+  popup/Popup.tsx              toolbar popup: running status, Recapture, FPS setting
   icons/
 ```
 
 ## How it works
 
-- The toolbar click runs `window.__snipviewOpen` in the tab (via
-  `chrome.scripting.executeScript`, so the user gesture PiP needs is preserved)
-- No saved region for this origin → a full-viewport overlay to drag a rectangle.
-  A saved region → straight to capture with it.
+- The keyboard shortcut runs `window.__snipviewOpen` in the tab (via
+  `chrome.scripting.executeScript`, so the user gesture PiP needs is preserved).
+  The toolbar icon instead opens a status popup (`src/popup`) — a click there
+  doesn't carry a real page gesture, so it can't start PiP directly.
+- Not already running → a full-viewport overlay to drag a rectangle (or pick
+  "Whole tab"). Already running → the adjust frame reappears over the live crop.
 - The content script asks the background for a fresh `chrome.tabCapture` stream id
   (they expire in seconds) and calls `getUserMedia({ chromeMediaSource: "tab" })`
-- A `<canvas>` copies just the region out of each frame; `canvas.captureStream(30)`
+- A `<canvas>` copies just the region out of each frame; `canvas.captureStream(fps)`
   feeds a hidden `<video>` whose `requestPictureInPicture()` opens the floating window
 - The draw loop reads a **mutable** region on `requestVideoFrameCallback`, so the
   on-page adjust frame reshapes the crop live and it keeps updating while the source
   tab is backgrounded
-- The region is stored as viewport fractions and persisted per origin in
-  `chrome.storage.local`
+- The region only lives in memory for the current session — nothing is persisted
+  per site. The popup's "Recapture" button re-shows the select overlay for a
+  running session via a `chrome.tabs.sendMessage`, without requesting PiP again.

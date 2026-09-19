@@ -1,6 +1,6 @@
 # SnipView Privacy Policy
 
-_Last updated: 2026-09-10_
+_Last updated: 2026-09-19_
 
 SnipView is a browser extension that shows a cropped region of one of your
 browser tabs in a picture-in-picture window.
@@ -10,9 +10,9 @@ browser tabs in a picture-in-picture window.
 - **The video frames of the tab you point it at**, and only while a
   picture-in-picture window is open. This happens entirely on your device —
   the frames are drawn to a local canvas and shown in the PiP window.
-- **A small preference in local storage**: the last crop rectangle you chose,
-  saved per website so you don't have to redraw it. This is stored with
-  `chrome.storage.local` on your machine.
+- **A small preference in local storage**: your chosen capture framerate.
+  This is stored with `chrome.storage.local` on your machine and applies to
+  every tab, not to any specific site.
 
 ## What SnipView does NOT do
 
@@ -20,6 +20,7 @@ browser tabs in a picture-in-picture window.
 - It does not use analytics, tracking, cookies, or remote logging.
 - It does not read page content, form fields, passwords, or browsing history.
 - It does not record or save video to a file.
+- It does not remember which sites you've used it on or what you cropped there.
 - It has no account, no server, and no third-party services.
 
 ## Permissions
@@ -28,7 +29,7 @@ browser tabs in a picture-in-picture window.
 |------------|-----|
 | `tabCapture` | Capture the current tab's video to show it in picture-in-picture |
 | `activeTab` / `scripting` | Run the selection overlay on the tab when you invoke SnipView |
-| `storage` | Remember your last crop region per site, locally |
+| `storage` | Remember your chosen capture framerate, locally |
 
 ## Contact
 
