@@ -21,17 +21,19 @@ resizes freely, and keeps updating live even while the source tab sits in the
 background.
 
 Features
-- Drag to select exactly the region you want
+- Drag to select exactly the region you want (or capture the whole tab)
 - Move and resize the crop at any time; the PiP updates instantly
-- Remembers your last region per site, so it's one click next time
+- Recapture a running session anytime from the toolbar popup
+- Adjustable capture framerate
 - Keyboard shortcut (Ctrl/Cmd+Shift+S), rebindable
 - Works entirely on your device — no account, no network, no tracking
 
 How to use
 1. Open the tab you want to watch
-2. Click the SnipView icon (or press Ctrl/Cmd+Shift+S)
-3. Drag a box around the part you care about
+2. Press Ctrl/Cmd+Shift+S
+3. Drag a box around the part you care about (or pick "Whole tab")
 4. A picture-in-picture window appears — switch tabs or apps and keep working
+5. Click the SnipView toolbar icon anytime to check status or redraw the crop
 
 ## Category
 
@@ -44,7 +46,8 @@ Productivity
   the device.
 - **activeTab, scripting** — to show the selection overlay on the tab when the
   user invokes SnipView.
-- **storage** — to remember the last crop rectangle per site (local only).
+- **storage** — to remember the user's chosen capture framerate (a global
+  setting, not tied to any site).
 - **host permissions (`<all_urls>`)** — the content script must be able to run
   on whatever page the user chooses to crop.
 
@@ -56,8 +59,9 @@ Productivity
 ## Assets still needed
 
 - [ ] 1280×800 or 640×400 screenshots (at least 1, up to 5):
-  - selection overlay over a chart
+  - drag-select overlay over a chart
   - PiP window floating over an editor
   - adjust frame with resize handles
+  - toolbar popup showing running status + Recapture button
 - [ ] 440×280 small promo tile (optional)
 - [ ] Privacy policy URL → link to PRIVACY.md on GitHub
