@@ -1,12 +1,13 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { requestStatus, type StatusResult } from "../messages";
+import { requestReselect, requestStatus, type StatusResult } from "../messages";
 import { RESTRICTED } from "../restricted";
+import { FPS_OPTIONS, loadFps, saveFps } from "../settings";
 
 type State =
   | { kind: "loading" }
   | { kind: "restricted" }
   | { kind: "unreachable" } // no content script there yet (e.g. page loaded before install)
-  | { kind: "ready"; status: StatusResult };
+  | { kind: "ready"; tabId: number; status: StatusResult };
 
 export function Popup() {
   const [state, setState] = useState<State>({ kind: "loading" });
@@ -22,6 +23,7 @@ export function Popup() {
         <h1 style={titleStyle}>SnipView</h1>
       </header>
       <Body state={state} />
+      <FpsSetting />
     </div>
   );
 }
@@ -32,7 +34,7 @@ async function loadStatus(): Promise<State> {
 
   try {
     const status = await requestStatus(tab.id);
-    return { kind: "ready", status };
+    return { kind: "ready", tabId: tab.id, status };
   } catch {
     // No content script listening — most likely the tab was open before
     // SnipView was installed/reloaded, so it never got injected.
@@ -50,7 +52,7 @@ function Body({ state }: { state: State }) {
       return <p style={mutedStyle}>Reload this tab to use SnipView on it.</p>;
     case "ready":
       return state.status.isRunning ? (
-        <RunningStatus region={state.status.region} />
+        <RunningStatus tabId={state.tabId} region={state.status.region} />
       ) : (
         <p style={mutedStyle}>
           Not running on this tab. Press <kbd style={kbdStyle}>⌘⇧S</kbd> (
@@ -60,7 +62,12 @@ function Body({ state }: { state: State }) {
   }
 }
 
-function RunningStatus({ region }: { region: StatusResult["region"] }) {
+function RunningStatus({ tabId, region }: { tabId: number; region: StatusResult["region"] }) {
+  const recapture = () => {
+    void requestReselect(tabId);
+    window.close();
+  };
+
   return (
     <div>
       <p style={{ ...mutedStyle, color: "#e8e8ef" }}>Running on this tab</p>
@@ -70,6 +77,44 @@ function RunningStatus({ region }: { region: StatusResult["region"] }) {
           {Math.round(region.left * 100)}%, {Math.round(region.top * 100)}%
         </p>
       )}
+      <button style={recaptureButtonStyle} onClick={recapture}>
+        Recapture
+      </button>
+    </div>
+  );
+}
+
+function FpsSetting() {
+  const [fps, setFps] = useState<number | null>(null);
+
+  useEffect(() => {
+    void loadFps().then(setFps);
+  }, []);
+
+  if (fps === null) return null;
+
+  const onChange = (value: number) => {
+    setFps(value);
+    void saveFps(value);
+  };
+
+  return (
+    <div style={fpsRowStyle}>
+      <label style={mutedStyle} htmlFor="snipview-fps">
+        Capture FPS
+      </label>
+      <select
+        id="snipview-fps"
+        style={fpsSelectStyle}
+        value={fps}
+        onChange={(e) => onChange(Number(e.target.value))}
+      >
+        {FPS_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -124,4 +169,34 @@ const kbdStyle: CSSProperties = {
   borderRadius: 4,
   background: "#232637",
   fontSize: 11,
+};
+
+const recaptureButtonStyle: CSSProperties = {
+  marginTop: 10,
+  border: `1px solid ${ACCENT}`,
+  background: "transparent",
+  color: ACCENT,
+  fontSize: 12,
+  fontWeight: 600,
+  borderRadius: 6,
+  padding: "5px 10px",
+  cursor: "pointer",
+};
+
+const fpsRowStyle: CSSProperties = {
+  marginTop: 14,
+  paddingTop: 10,
+  borderTop: "1px solid #232637",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+};
+
+const fpsSelectStyle: CSSProperties = {
+  background: "#232637",
+  color: "#f5f5fa",
+  border: "none",
+  borderRadius: 6,
+  padding: "3px 6px",
+  fontSize: 12,
 };

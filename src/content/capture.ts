@@ -27,7 +27,7 @@ export function setRegion(region: Region): void {
   if (session) session.region = region;
 }
 
-export async function startCroppedPip(streamId: string, region: Region): Promise<void> {
+export async function startCroppedPip(streamId: string, region: Region, fps: number): Promise<void> {
   if (session) return;
 
   const tabStream = await navigator.mediaDevices.getUserMedia({
@@ -54,7 +54,7 @@ export async function startCroppedPip(streamId: string, region: Region): Promise
   const pip = document.createElement("video");
   pip.muted = true;
   hideOffscreen(pip);
-  pip.srcObject = canvas.captureStream(30);
+  pip.srcObject = canvas.captureStream(fps);
   document.body.appendChild(pip);
   await pip.play();
   if (pip.readyState < HTMLMediaElement.HAVE_METADATA) {

@@ -2,8 +2,9 @@
 // (via chrome.scripting.executeScript) on the toolbar click.
 
 import { createElement } from "react";
-import type { GetStatus, StatusResult } from "../messages";
+import type { GetStatus, Reselect, StatusResult } from "../messages";
 import { requestStreamId } from "../messages";
+import { loadFps } from "../settings";
 import { getRegion, isRunning, setRegion, startCroppedPip, stopPip } from "./capture";
 import type { Region } from "./region";
 import { AdjustFrame } from "./overlay/AdjustFrame";
@@ -27,6 +28,11 @@ chrome.runtime.onMessage.addListener(
   },
 );
 
+chrome.runtime.onMessage.addListener((message: Reselect) => {
+  if (message?.type !== "snipview:reselect" || !isRunning()) return;
+  showSelect();
+});
+
 async function open(): Promise<void> {
   if (isRunning()) {
     showAdjust(getRegion()!);
@@ -49,8 +55,8 @@ async function start(region: Region): Promise<void> {
     if (isRunning()) {
       setRegion(region);
     } else {
-      const streamId = await requestStreamId();
-      await startCroppedPip(streamId, region);
+      const [streamId, fps] = await Promise.all([requestStreamId(), loadFps()]);
+      await startCroppedPip(streamId, region, fps);
     }
     showAdjust(region);
   } catch (error) {
