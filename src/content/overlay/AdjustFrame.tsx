@@ -4,7 +4,6 @@ import { clampRegion, type Region } from "../region";
 type Props = {
   initialRegion: Region;
   onChange: (region: Region) => void; // live, every move
-  onCommit: (region: Region) => void; // on release, for persistence
   onDone: () => void; // hide the frame, keep PiP running
   onReselect: () => void; // draw a fresh region
   onStop: () => void; // stop PiP
@@ -18,7 +17,6 @@ type Drag = { handle: Handle; x: number; y: number; from: Region };
 export function AdjustFrame({
   initialRegion,
   onChange,
-  onCommit,
   onDone,
   onReselect,
   onStop,
@@ -73,7 +71,6 @@ export function AdjustFrame({
     if (!drag.current) return;
     drag.current = null;
     (e.target as Element).releasePointerCapture?.(e.pointerId);
-    onCommit(region);
   };
 
   const box: Box = {
