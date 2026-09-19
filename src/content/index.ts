@@ -5,7 +5,6 @@ import { createElement } from "react";
 import { requestStreamId } from "../messages";
 import { getRegion, isRunning, setRegion, startCroppedPip, stopPip } from "./capture";
 import type { Region } from "./region";
-import { loadRegion, saveRegion } from "./regionStore";
 import { AdjustFrame } from "./overlay/AdjustFrame";
 import { mountOverlay, unmountOverlay } from "./overlay/mount";
 import { SelectionOverlay } from "./overlay/SelectionOverlay";
@@ -16,8 +15,6 @@ declare global {
   }
 }
 
-const origin = location.origin;
-
 window.__snipviewOpen = () => {
   void open();
 };
@@ -27,9 +24,7 @@ async function open(): Promise<void> {
     showAdjust(getRegion()!);
     return;
   }
-  const saved = await loadRegion(origin);
-  if (saved) start(saved);
-  else showSelect();
+  showSelect();
 }
 
 function showSelect(): void {
@@ -49,7 +44,6 @@ async function start(region: Region): Promise<void> {
       const streamId = await requestStreamId();
       await startCroppedPip(streamId, region);
     }
-    await saveRegion(origin, region);
     showAdjust(region);
   } catch (error) {
     console.warn("[SnipView]", error instanceof Error ? error.message : error);
@@ -62,7 +56,6 @@ function showAdjust(region: Region): void {
     createElement(AdjustFrame, {
       initialRegion: region,
       onChange: setRegion,
-      onCommit: (r) => void saveRegion(origin, r),
       onDone: unmountOverlay,
       onReselect: showSelect,
       onStop: () => {
