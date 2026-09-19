@@ -2,6 +2,7 @@
 // (via chrome.scripting.executeScript) on the toolbar click.
 
 import { createElement } from "react";
+import type { GetStatus, StatusResult } from "../messages";
 import { requestStreamId } from "../messages";
 import { getRegion, isRunning, setRegion, startCroppedPip, stopPip } from "./capture";
 import type { Region } from "./region";
@@ -18,6 +19,13 @@ declare global {
 window.__snipviewOpen = () => {
   void open();
 };
+
+chrome.runtime.onMessage.addListener(
+  (message: GetStatus, _sender, sendResponse: (result: StatusResult) => void) => {
+    if (message?.type !== "snipview:get-status") return;
+    sendResponse({ isRunning: isRunning(), region: getRegion() });
+  },
+);
 
 async function open(): Promise<void> {
   if (isRunning()) {

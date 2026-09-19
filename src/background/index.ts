@@ -1,12 +1,10 @@
-// Opens SnipView on the active tab — from the toolbar click or the keyboard
-// shortcut. The content script asks back for a tab-capture stream id once the
-// region is chosen, so the id is fresh when it's used (they expire in seconds).
+// Opens SnipView on the active tab from the keyboard shortcut (the toolbar
+// icon opens the status popup instead — see src/popup). The content script
+// asks back for a tab-capture stream id once the region is chosen, so the id
+// is fresh when it's used (they expire in seconds).
 
 import type { GetStreamId, StreamIdResult } from "../messages";
-
-const RESTRICTED = /^(chrome|edge|about|chrome-extension|devtools):/i;
-
-chrome.action.onClicked.addListener((tab) => openInTab(tab));
+import { RESTRICTED } from "../restricted";
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== "open-snipview") return;
